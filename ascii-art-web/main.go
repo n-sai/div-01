@@ -12,7 +12,6 @@ import (
 var err500 string = "500 Internal Server Error"
 var err404 string = "404 This page not found"
 var err400 string = "400 Bad Request"
-var selectedBanner string = "standard"
 var firstRun int = 0
 
 type Page struct {
@@ -23,7 +22,6 @@ type Page struct {
 
 func (p *Page) save() error {
 	filename := "test.txt"
-
 	return ioutil.WriteFile(filename, p.Body, 0600)
 }
 
@@ -42,14 +40,12 @@ func loadPage(banner string) (*Page, error) {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	// firstRun = 0
 	if r.URL.Path != "/" {
 		errorHandler(w, r, http.StatusNotFound)
 		return
 	}
 	banner := r.FormValue("banners")
-	selectedBanner = banner
-	p, err := loadPage(selectedBanner)
+	p, err := loadPage(banner)
 
 	if err != nil {
 		fmt.Println(err)
@@ -62,16 +58,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func saveHandler(w http.ResponseWriter, r *http.Request) {
 	body := r.FormValue("body")
 	banner := r.FormValue("banners")
-	selectedBanner = banner
-	p := &Page{Banner: selectedBanner, Body: []byte(body)}
-	p.save()
+	p := &Page{Banner: banner, Body: []byte(body)}
+	err1 := p.save()
 	input := body[:(len(body))]
 	if !isValid(input) {
 		errorHandler(w, r, 400)
 		return
 	}
 	out, err := asciify(input, banner)
-	if err != nil {
+	if err != nil || err1 != nil {
 		errorHandler(w, r, 500)
 		return
 	}
