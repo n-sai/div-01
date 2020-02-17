@@ -7,11 +7,15 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"strings"
 )
 
 var err500 string = "500 Internal Server Error"
 var err404 string = "404 This page not found"
 var err400 string = "400 Bad Request"
+var inputFile string = "input.txt"
+var inputAscii string = "inputForAscii.txt"
+var outputFile string = "output.txt"
 var firstRun int = 0
 
 type Page struct {
@@ -21,17 +25,27 @@ type Page struct {
 }
 
 func (p *Page) save() error {
-	filename := "test.txt"
-	return ioutil.WriteFile(filename, p.Body, 0600)
+	ioutil.WriteFile(inputFile, p.Body, 0600)
+	fmt.Println(p.Body)
+	fmt.Println(string(p.Body))
+	var enter rune = 13
+	var enter2 rune = 10
+
+	res := strings.Replace(string(p.Body), string(enter), "\\", -1)
+	res2 := strings.Replace(res, string(enter2), "n", -1)
+	fmt.Println(res2)
+
+	return ioutil.WriteFile(inputAscii, []byte(res2), 0600)
 }
 
 func loadPage(banner string) (*Page, error) {
-	filename := "test.txt"
-	body, err := ioutil.ReadFile(filename)
+	body, err := ioutil.ReadFile(inputFile)
 	if firstRun == 0 {
 		body = []byte("")
+		ioutil.WriteFile(inputFile, []byte(""), 0600)
+		ioutil.WriteFile(outputFile, []byte(""), 0600)
 	}
-	output, err := ioutil.ReadFile("output.txt")
+	output, err := ioutil.ReadFile(outputFile)
 	firstRun = 1
 	if err != nil {
 		return nil, err
@@ -51,6 +65,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		p = &Page{}
 	}
+
 	t, _ := template.ParseFiles("index.html")
 	t.Execute(w, p)
 }
@@ -60,17 +75,17 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	banner := r.FormValue("banners")
 	p := &Page{Banner: banner, Body: []byte(body)}
 	err1 := p.save()
-	input := body[:(len(body))]
-	if !isValid(input) {
+	input, _ := ioutil.ReadFile(inputAscii) //body[:(len(body))]
+	if !isValid(string(input)) {
 		errorHandler(w, r, 400)
 		return
 	}
-	out, err := asciify(input, banner)
+	out, err := asciify(string(input), banner)
 	if err != nil || err1 != nil {
 		errorHandler(w, r, 500)
 		return
 	}
-	ioutil.WriteFile("output.txt", []byte(out), 0600)
+	ioutil.WriteFile(outputFile, []byte(out), 0600)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -110,16 +125,12 @@ func errorHandler(w http.ResponseWriter, r *http.Request, status int) {
 	t.Execute(w, p)
 }
 
-// Left to handle:
-
-// 5. +Is there a test file for this code?
-// 6. +Are the tests checking each possible case?
-// 7. +Are the instructions in the website clear?
-// 8. +Does the project run using an API?
-
 func main() {
 
 	http.HandleFunc("/", handler)
 	http.HandleFunc("/save/", saveHandler)
+
+	fs := http.FileServer(http.Dir("ourCSS"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
