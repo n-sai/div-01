@@ -30,6 +30,11 @@
                 <input type="submit" value="Save">
             </div>
         </form>
+        <form action="/download/{{.Banner}}" method="POST">
+            <div>
+                <input type="submit" value="Download">
+            </div>
+        </form>
         <!-- output -->
         <br><br>
         <pre>{{printf "%s" .Output}}</pre>

@@ -1,0 +1,5 @@
+FROM golang:onbuild
+WORKDIR /
+RUN go build -o main .
+CMD["/main"]
+

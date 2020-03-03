@@ -21,5 +21,6 @@ div {
     color: rgba(51, 50, 50, 0.64);
 }
 a {
-    margin:50px 25% 0 30%;
+    margin:auto;
+    text-align: center;
 }

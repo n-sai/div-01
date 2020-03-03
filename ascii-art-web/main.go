@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 var err500 string = "500 Internal Server Error"
@@ -75,7 +78,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	banner := r.FormValue("banners")
 	p := &Page{Banner: banner, Body: []byte(body)}
 	err1 := p.save()
-	input, _ := ioutil.ReadFile(inputAscii) //body[:(len(body))]
+	input, _ := ioutil.ReadFile(inputAscii)
 	if !isValid(string(input)) {
 		errorHandler(w, r, 400)
 		return
@@ -86,6 +89,35 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ioutil.WriteFile(outputFile, []byte(out), 0600)
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func downloadHandler(w http.ResponseWriter, r *http.Request) {
+
+	file, err := os.Open(outputFile)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	fileInfo, _ := file.Stat()
+	var size int64 = fileInfo.Size()
+	buffer := make([]byte, size)
+	// read file content to buffer
+	file.Read(buffer)
+	content := bytes.NewReader(buffer)
+
+	// ServeContent uses modtime
+	modtime := time.Now()
+	// ServeContent uses the name for mime detection
+	const name = "ascii.txt"
+
+	// tell the browser the returned content should be downloaded
+	w.Header().Add("Content-Disposition", "Attachment")
+
+	http.ServeContent(w, r, name, modtime, content)
+
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -129,6 +161,7 @@ func main() {
 
 	http.HandleFunc("/", handler)
 	http.HandleFunc("/save/", saveHandler)
+	http.HandleFunc("/download/", downloadHandler)
 
 	fs := http.FileServer(http.Dir("ourCSS"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))

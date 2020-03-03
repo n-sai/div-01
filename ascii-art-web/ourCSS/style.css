@@ -7,9 +7,7 @@ body{
     background: #FFFFFF;
     background-image: url(desk.jpg);
     background-repeat: no-repeat;
-    /* background-size:contain; */
     background-position: top;
-    /* background-size: 100% 180%; */
 }
 
 h1 {
@@ -59,9 +57,6 @@ letter-spacing: 0.04em;
 text-transform: uppercase;
 cursor: pointer;
 }
-/* input:hover {
-    background-color:#071108;
-} */
 
 #output {
     text-align: center;
